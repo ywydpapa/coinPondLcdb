@@ -37,6 +37,11 @@ def initsqlite():
 	useYN TEXT, regDate TEXT, modDate TEXT, attrib TEXT DEFAULT ('100001000010000'),
 	CONSTRAINT traceSets_pk PRIMARY KEY (setNo))
     ''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS traceUser (
+	userNo INTEGER NOT NULL, userId TEXT, userName TEXT, userPasswd TEXT , apiKey1 TEXT, apiKey2 TEXT, setupKey TEXT, lastLogin TEXT, serverNo INTEGER, userRole TEXT, tradeCnt INTEGER, memo TEXT, server TEXT, attrib TEXT,
+	CONSTRAINT traceUSer_pk PRIMARY KEY (userNo))
+    ''')
     connlc.commit()
     connlc.close()
 
@@ -45,6 +50,7 @@ def loadMariatoLite(svrno):
     cur13 = db.cursor()
     connlc = sqlite3.connect("cpondLoc.db")
     cursor = connlc.cursor()
+    print('------------------------------------------------------------------------------------DB Sync--------------------------------------')
     try:
         sql = "select * from traceSets where attrib not like %s"
         cur13.execute(sql, '%XXXUP')
@@ -62,6 +68,14 @@ def loadMariatoLite(svrno):
             for setup in setups:
                 cursor.execute(''' INSERT OR REPLACE INTO traceSetup (setupNo,userNo,initAsset,bidInterval,bidRate,askRate,bidCoin,activeYN,custKey,serverNo,holdYN,holdNo,doubleYN,limitYN,limitAmt,slot,regDate,attrib)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', setup)
+            connlc.commit()
+        sql2 = "select * from traceUser where serverNo = %s and attrib not like %s"
+        cur13.execute(sql2, (svrno, '%XXXUP'))
+        users = list(cur13.fetchall())
+        if users != None:
+            for user in users:
+                cursor.execute(''' INSERT OR REPLACE INTO traceUser (userNo,userId,userName,userPasswd,apiKey1,apiKey2,setupKey,lastLogin,serverNo,userRole,tradeCnt,memo,server,attrib)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', user)
             connlc.commit()
         connlc.close()
     except Exception as e:
@@ -163,6 +177,19 @@ def getsetonsvr_tr(svrNo):
         db.close()
 
 
+def getsetonsvr_trLoc(svrNo):
+    connlc = sqlite3.connect("cpondLoc.db")
+    cursor = connlc.cursor()
+    try:
+        cursor.execute('''select distinct userNo from traceSetup where serverNo= ? and attrib not like ?''',(svrNo, "%XXXUP"))
+        data = list(cursor.fetchall())
+        return data
+    except Exception as e:
+        print('접속오류', e)
+    finally:
+        cursor.close()
+
+
 def getupbitkey(uno):
     db = pymysql.connect(host=hostenv, user=userenv, password=passwordenv, db=dbenv, charset=charsetenv)
     cur17 = db.cursor()
@@ -193,19 +220,17 @@ def getupbitkey_tr(uno):
         db.close()
 
 
-def getupbitkey_tr(uno):
-    db = pymysql.connect(host=hostenv, user=userenv, password=passwordenv, db=dbenv, charset=charsetenv)
-    cur17 = db.cursor()
+def getupbitkey_trLoc(uno):
+    connlc = sqlite3.connect("cpondLoc.db")
+    cursor = connlc.cursor()
     try:
-        sql = "SELECT apiKey1, apiKey2 FROM traceUser WHERE userNo=%s and attrib not like %s"
-        cur17.execute(sql, (uno, '%XXXUP'))
-        data = cur17.fetchone()
+        cursor.execute('''SELECT apiKey1, apiKey2 FROM traceUser where userNo= ? and attrib not like ?''',(uno, "%XXXUP"))
+        data = list(cursor.fetchone())
         return data
     except Exception as e:
         print('접속오류', e)
     finally:
-        cur17.close()
-        db.close()
+        cursor.close()
 
 
 def clearcache():
@@ -249,6 +274,19 @@ def setdetail_tr(setno):
         cur20.close()
         db.close()
     return rows
+
+
+def setdetail_trLoc(setno):
+    connlc = sqlite3.connect("cpondLoc.db")
+    cursor = connlc.cursor()
+    try:
+        cursor.execute('''SELECT * FROM traceSets WHERE setNo = ?''', (setno,))
+        data = list(cursor.fetchone())
+        return data
+    except Exception as e:
+        print('접속오류', e)
+    finally:
+        cursor.close()
 
 
 def errlog(err, userno):
@@ -404,12 +442,18 @@ def lclog(coinn, uno, gap, lcamt, mywon, lossamt):
 def setonoff(sno, yesno):
     db = pymysql.connect(host=hostenv, user=userenv, password=passwordenv, db=dbenv, charset=charsetenv)
     cur39 = db.cursor()
+    connlc = sqlite3.connect("cpondLoc.db")
+    cursor = connlc.cursor()
     try:
         sql = "UPDATE traceSetup SET activeYN = %s where setupNo=%s"
         cur39.execute(sql, (yesno, sno))
         db.commit()
+        cursor.execute('''UPDATE traceSetup SET activeYN = ? where setupNo= ?''', (yesno, sno))
+        connlc.commit()
     except Exception as e:
         print('상태 업데이트 오류', e)
     finally:
         cur39.close()
         db.close()
+        cursor.close()
+

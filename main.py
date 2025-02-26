@@ -12,7 +12,7 @@ import requests
 dotenv.load_dotenv()
 bidcnt = 1
 svrno = os.getenv("server_no")
-mainver = 'LOC20250225001'
+mainver = 'LOC20250227001'
 
 
 def loadmyset(uno):
@@ -315,7 +315,7 @@ def each_trade(key1, key2, coinn, initAsset, profit, uno):
 
 def trService(svrno):
     global uno
-    users = dbconn.getsetonsvr_tr(svrno)
+    users = dbconn.getsetonsvr_trLoc(svrno)
     try:
         for user in users:
             setups = dbconn.getmsetup_trloc(user)
@@ -328,7 +328,7 @@ def trService(svrno):
                     amtlimityn = setup[13]
                     amtlimit = setup[14]
                     vcoin = setup[6][4:]
-                    keys = dbconn.getupbitkey_tr(uno)  # 키를 받아 오기
+                    keys = dbconn.getupbitkey_trLoc(uno)  # 키를 받아 오기
                     upbit = pyupbit.Upbit(keys[0], keys[1])
                     mycoins = upbit.get_balances()
                     mywon = 0  # 보유 원화
@@ -395,7 +395,7 @@ def trService(svrno):
                     print("현재 매도주문수 ", str(cntask))
                     print("현재 매수주문수 ", str(cntbid))
                     # 상세 설정
-                    trsets = dbconn.setdetail_tr(setup[8])  # 상세 투자 설정 Trace 로 설정 변경
+                    trsets = dbconn.setdetail_trLoc(setup[8])  # 상세 투자 설정 Trace 로 설정 변경
                     mrate = float(setup[2] / 10000)
                     gapsz = trsets[3:13]
                     intsz = trsets[13:23]
@@ -934,7 +934,7 @@ def chk_lastbid(coinn, uno, restmin):
 
 
 def losscut(uno, coinn, gap, mywon):
-    keys = dbconn.getupbitkey_tr(uno)
+    keys = dbconn.getupbitkey_trLoc(uno)
     cancelaskorder(keys[0], keys[1], coinn, uno)  # 기존 매도주문 취소
     upbit = pyupbit.Upbit(keys[0], keys[1])
     walt = upbit.get_balances()
@@ -1003,7 +1003,6 @@ service_start()  # 시작시간 기록
 
 while True:
     print("구동 횟수 : ", str(cnt))
-    dbconn.loadMariatoLite(svrno)
     try:
         if servtype == "POND" and serveryn == 'Y':
             pondService(svrno)
@@ -1023,6 +1022,8 @@ while True:
         if cnt > 3600:  # 0.5시간 마다 재시작
             cnt = 1
             service_restart()
+        if cnt % 9 == 0: # 9번 실행 마다 데이터 베이스 업데이트
+            dbconn.loadMariatoLite(svrno)
         servt = dbconn.getserverType(svrno)
         if servt[0] is not None:
             if servtype != servt[0]:
