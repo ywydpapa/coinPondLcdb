@@ -318,7 +318,7 @@ def trService(svrno):
     users = dbconn.getsetonsvr_tr(svrno)
     try:
         for user in users:
-            setups = dbconn.getmsetup_tr(user)
+            setups = dbconn.getmsetup_trloc(user)
             try:
                 for setup in setups:  # (658,	23,	10000.0, 9,	1.0, 0.5, KRW-ZETA,	Y, 42, 21, N, 6, N, N, 1000000.0)
                     if setup[7] != "Y":
@@ -860,6 +860,7 @@ def service_start():
     vermsg = str(mainver) + ":" + str(servtype)
     dbconn.servicelog(msg, 0)
     dbconn.serviceStat(svrno, myip, vermsg)
+    dbconn.initsqlite()
     os.system("pip install -r ./requirement.txt")
 
 
@@ -1002,6 +1003,7 @@ service_start()  # 시작시간 기록
 
 while True:
     print("구동 횟수 : ", str(cnt))
+    dbconn.loadMariatoLite(svrno)
     try:
         if servtype == "POND" and serveryn == 'Y':
             pondService(svrno)

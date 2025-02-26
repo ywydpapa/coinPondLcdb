@@ -6,6 +6,7 @@ import pymysql
 import random
 import pandas as pd
 import dotenv
+import sqlite3
 
 dotenv.load_dotenv()
 hostenv = os.getenv("host")
@@ -16,6 +17,58 @@ charsetenv = os.getenv("charset")
 
 db = pymysql.connect(host=hostenv, user=userenv, password=passwordenv, db=dbenv, charset=charsetenv)
 serviceNo = 250204
+
+
+def initsqlite():
+    connlc = sqlite3.connect("cpondLoc.db")
+    cursor = connlc.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS traceSetup (
+	setupNo INTEGER NOT NULL, userNo INTEGER,initAsset REAL, bidInterval INTEGER, bidRate REAL, askRate REAL, bidCoin TEXT, activeYN TEXT, custKey TEXT, serverNo INTEGER, holdYN TEXT, holdNo INTEGER, doubleYN TEXT, limitYN TEXT, limitAmt REAL, slot INTEGER, regDate TEXT, attrib TEXT DEFAULT ('100001000010000'),
+	CONSTRAINT traceSetup_pk PRIMARY KEY (setupNo))
+    ''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS traceSets (
+	setNo INTEGER,setTitle TEXT,setInterval INTEGER,setp0 REAL,setp1 REAL,step2 REAL,step3 REAL,step4 REAL,step5 REAL,step6 REAL,step7 REAL,step8 REAL,step9 REAL,
+	inter0 REAL,inter1 REAL,inter2 REAL,inter3 REAL,inter4 REAL,inter5 REAL,inter6 REAL,inter7 REAL,inter8 REAL,inter9 REAL,
+	bid0 REAL,bid1 REAL,bid2 REAL,bid3 REAL,bid4 REAL,bid5 REAL,bid6 REAL,bid7 REAL,bid8 REAL,bid9 REAL,
+	max0 REAL,	max1 REAL,	max2 REAL,	max3 REAL,	max4 REAL,	max5 REAL,	max6 REAL,	max7 REAL,	max8 REAL,	max9 REAL,
+	net0 TEXT DEFAULT ('N'), net1 TEXT DEFAULT ('N'), net2 TEXT DEFAULT ('N'), net3 TEXT DEFAULT ('N'), net4 TEXT DEFAULT ('N'), net5 TEXT DEFAULT ('N'), net6 TEXT DEFAULT ('N'), net7 TEXT DEFAULT ('N'), net8 TEXT DEFAULT ('N'), net9 TEXT DEFAULT ('N'),
+	useYN TEXT, regDate TEXT, modDate TEXT, attrib TEXT DEFAULT ('100001000010000'),
+	CONSTRAINT traceSets_pk PRIMARY KEY (setNo))
+    ''')
+    connlc.commit()
+    connlc.close()
+
+def loadMariatoLite(svrno):
+    db = pymysql.connect(host=hostenv, user=userenv, password=passwordenv, db=dbenv, charset=charsetenv)
+    cur13 = db.cursor()
+    connlc = sqlite3.connect("cpondLoc.db")
+    cursor = connlc.cursor()
+    try:
+        sql = "select * from traceSets where attrib not like %s"
+        cur13.execute(sql, '%XXXUP')
+        sets = list(cur13.fetchall())
+        for set in sets:
+            cursor.execute('''INSERT OR REPLACE INTO traceSets (setNo, setTitle,setInterval,setp0,setp1,step2,step3,step4,step5,step6,step7,step8,step9,
+            inter0,inter1,inter2,inter3,inter4,inter5,inter6,inter7,inter8,inter9,bid0,bid1,bid2,bid3,bid4,bid5,bid6,bid7,bid8,bid9,
+            max0,max1,max2,max3,max4,max5,max6,max7,max8,max9,net0,net1,net2,net3,net4,net5,net6,net7,net8,net9,
+            useYN,regDate,modDate,attrib) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', set)
+        connlc.commit()
+        sql1 = "select * from traceSetup where serverNo = %s and attrib not like %s"
+        cur13.execute(sql1, (svrno,'%XXXUP'))
+        setups = list(cur13.fetchall())
+        if setups != None:
+            for setup in setups:
+                cursor.execute(''' INSERT OR REPLACE INTO traceSetup (setupNo,userNo,initAsset,bidInterval,bidRate,askRate,bidCoin,activeYN,custKey,serverNo,holdYN,holdNo,doubleYN,limitYN,limitAmt,slot,regDate,attrib)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', setup)
+            connlc.commit()
+        connlc.close()
+    except Exception as e:
+        print('접속오류', e)
+    finally:
+        cur13.close()
+        db.close()
 
 
 def getmsetup(uno):
@@ -46,6 +99,19 @@ def getmsetup_tr(uno):
     finally:
         cur13.close()
         db.close()
+
+
+def getmsetup_trloc(uno):
+    connlc = sqlite3.connect("cpondLoc.db")
+    cursor = connlc.cursor()
+    try:
+        cursor.execute('''select * from traceSetup where userNo= ? and attrib not like ?''',(uno[0], "%XXXUP"))
+        data = list(cursor.fetchall())
+        return data
+    except Exception as e:
+        print('접속오류', e)
+    finally:
+        cursor.close()
 
 
 def getseton():
