@@ -12,7 +12,7 @@ import requests
 dotenv.load_dotenv()
 bidcnt = 1
 svrno = os.getenv("server_no")
-mainver = 'LOC20250227001'
+mainver = 'LOC20250227002'
 
 
 def loadmyset(uno):
@@ -1031,8 +1031,8 @@ while True:
             prevdbtime = now11
         else:
             gap = now11-prevdbtime
-            print(gap.seconds)
-        if gap.seconds >= 5: # 5초 초과시 마다 데이터 베이스 업데이트
+            print('DB Sync 경과시간 :',gap.seconds ,'초' )
+        if gap.seconds >= 10: # 5초 초과시 마다 데이터 베이스 업데이트
             dbconn.loadMariatoLite(svrno)
             prevdbtime = now11
         servt = dbconn.getserverType(svrno)

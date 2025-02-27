@@ -54,7 +54,7 @@ def loadMariatoLite(svrno):
     cur13 = db.cursor()
     connlc = sqlite3.connect("cpondLoc.db")
     cursor = connlc.cursor()
-    print('------------------------------------------------------------------------------------DB Sync--------------------------------------')
+    print('------------------------------------------------DB Sync------------------------------------------------')
     try:
         sql = "select * from traceSets where attrib not like %s"
         cur13.execute(sql, '%XXXUP')
