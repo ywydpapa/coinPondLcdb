@@ -328,7 +328,10 @@ def trService(svrno):
                     amtlimityn = setup[13]
                     amtlimit = setup[14]
                     vcoin = setup[6][4:]
-                    keys = dbconn.getupbitkey_trLoc(uno)  # 키를 받아 오기
+                    keys = dbconn.getupbitkey_trLoc(uno)# 키를 받아 오기
+                    if keys is None:
+                        print("사용자 API 키 없음")
+                        continue
                     upbit = pyupbit.Upbit(keys[0], keys[1])
                     mycoins = upbit.get_balances()
                     mywon = 0  # 보유 원화
@@ -1000,6 +1003,7 @@ if servtype is None:
 if serveryn is None:
     serveryn = "Y"
 service_start()  # 시작시간 기록
+prevdbtime = datetime.now()
 
 while True:
     print("구동 횟수 : ", str(cnt))
@@ -1022,8 +1026,15 @@ while True:
         if cnt > 3600:  # 0.5시간 마다 재시작
             cnt = 1
             service_restart()
-        if cnt % 9 == 0: # 9번 실행 마다 데이터 베이스 업데이트
+        now11 = datetime.now()
+        if prevdbtime is None:
+            prevdbtime = now11
+        else:
+            gap = now11-prevdbtime
+            print(gap.seconds)
+        if gap.seconds >= 5: # 5초 초과시 마다 데이터 베이스 업데이트
             dbconn.loadMariatoLite(svrno)
+            prevdbtime = now11
         servt = dbconn.getserverType(svrno)
         if servt[0] is not None:
             if servtype != servt[0]:

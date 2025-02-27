@@ -22,6 +22,10 @@ serviceNo = 250204
 def initsqlite():
     connlc = sqlite3.connect("cpondLoc.db")
     cursor = connlc.cursor()
+    cursor.execute(f"DELETE FROM traceUser;")  # 테이블의 모든 데이터 삭제
+    cursor.execute(f"DELETE FROM traceSets;")  # 테이블의 모든 데이터 삭제
+    cursor.execute(f"DELETE FROM traceSetup;")  # 테이블의 모든 데이터 삭제
+    connlc.commit()
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS traceSetup (
 	setupNo INTEGER NOT NULL, userNo INTEGER,initAsset REAL, bidInterval INTEGER, bidRate REAL, askRate REAL, bidCoin TEXT, activeYN TEXT, custKey TEXT, serverNo INTEGER, holdYN TEXT, holdNo INTEGER, doubleYN TEXT, limitYN TEXT, limitAmt REAL, slot INTEGER, regDate TEXT, attrib TEXT DEFAULT ('100001000010000'),
@@ -224,7 +228,7 @@ def getupbitkey_trLoc(uno):
     connlc = sqlite3.connect("cpondLoc.db")
     cursor = connlc.cursor()
     try:
-        cursor.execute('''SELECT apiKey1, apiKey2 FROM traceUser where userNo= ? and attrib not like ?''',(uno, "%XXXUP"))
+        cursor.execute('''SELECT apiKey1, apiKey2 FROM traceUser where userNo= ? and attrib not like ?''',(uno, "%XXXUP%"))
         data = list(cursor.fetchone())
         return data
     except Exception as e:
